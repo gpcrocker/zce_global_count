@@ -4,26 +4,27 @@
  * Date: 08/09/15
  */
 
-const DEBUG   = true;
+const ZCE_XML_FNAME = 'zced-form-country.xml';
+const ZCE_SER_FNAME = 'zendcountryids.txt';
+const VERBOSE   = true; //Shows Country Information per iteration
 
-echo 'Getting global count of ZCE...'.PHP_EOL;
-echo 'Total number of ZCEs worldwide is '.get_zce_world_count();
+echo 'Total number of ZCEs worldwide is '.get_zce_world_count().PHP_EOL;
 
 
 /**
- * If DEBUG is true it will also print Country ID, Name, ZCE Count and Partial Total
+ * If VERBOSE is true it will also print Country ID, Name, ZCE Count and Partial Total
  * @return int the total count of ZCE in the world
  */
 function get_zce_world_count()
 {
     $total_zce =0;
-    //Generated file using cid.php + zced-form-country.xml
-    $country_ids = unserialize(file_get_contents('zendcountryids.txt'));
+    //File was generated using function generate_countryinfo_from_xml()
+    $country_ids = unserialize(file_get_contents(ZCE_SER_FNAME));
     foreach($country_ids as $cid => $country_name)
     {
         $zce_count_by_country = count(get_zce_by_country($cid));
         $total_zce += $zce_count_by_country;
-        if(DEBUG)
+        if(VERBOSE)
         {
             echo "Country ID: ".$cid.PHP_EOL.
                  "Country Name: ".$country_name.PHP_EOL.
@@ -36,7 +37,7 @@ function get_zce_world_count()
 
 /**
  * @param $cid zend country id
- * @return int|array returns array of zce information, else error code
+ * @return array returns array of zce information, else error code
  */
 function get_zce_by_country($cid)
 {
@@ -60,4 +61,30 @@ function get_zce_by_country($cid)
         echo 'Error #01: Invalid Response - check URI'.PHP_EOL;
         return -1;
     }
+}
+
+/*
+ * Converts the Zend Country Id and associated Name from XML to a Serialized object
+ * @return int|bool the number of bytes that were written to the file, or FALSE on failure.
+ */
+function generate_countryinfo_from_xml()
+{
+    $country_array = get_country_names_from_cids();
+    return file_put_contents(ZCE_SER_FNAME, serialize($country_array));
+}
+
+/**
+ * @return string name of country
+ */
+function get_country_names_from_cids()
+{
+    $dom = new DOMDocument();
+    $dom->loadHTMLFile(ZCE_XML_FNAME);
+    $options = $dom->getElementsByTagName("option");
+    foreach($options as $node)
+    {
+        $index[$node->getAttribute("value")] = $node->textContent;
+    }
+    ksort($index);
+    return $index;
 }
