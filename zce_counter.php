@@ -7,15 +7,17 @@
 const ZCE_XML_FNAME = 'zced-form-country.xml';
 const ZCE_SER_FNAME = 'zendcountryids.txt';
 const VERBOSE   = true; //Shows Country Information per iteration
+$country_stats = array();
+echo 'Total number of ZCEs worldwide is '.get_zce_world_count($country_stats).PHP_EOL;
 
-echo 'Total number of ZCEs worldwide is '.get_zce_world_count().PHP_EOL;
-
+var_dump($country_stats);
 
 /**
  * If VERBOSE is true it will also print Country ID, Name, ZCE Count and Partial Total
- * @return int the total count of ZCE in the world
+ * @param array -  if passed, then will store information related to countries in it;
+ * @return int - the total count of ZCE in the world
  */
-function get_zce_world_count()
+function get_zce_world_count(&$country_stats=null)
 {
     $total_zce =0;
     //File was generated using function generate_countryinfo_from_xml()
@@ -26,11 +28,19 @@ function get_zce_world_count()
         $total_zce += $zce_count_by_country;
         if(VERBOSE)
         {
-            echo "Country ID: ".$cid.PHP_EOL.
-                 "Country Name: ".$country_name.PHP_EOL.
-                 "Country Count: ".$zce_count_by_country.PHP_EOL.
-                 "Total Count: ".$total_zce.PHP_EOL.PHP_EOL;
+            echo "Country ID: ".    $cid.PHP_EOL.
+                 "Country Name: ".  $country_name.PHP_EOL.
+                 "Country Count: ". $zce_count_by_country.PHP_EOL.
+                 "Total Count: ".   $total_zce.PHP_EOL.PHP_EOL;
         }
+        if(is_array($country_stats))
+        {
+            $country_stats[$country_name]= [ "id" => $cid, "zce-count" => $zce_count_by_country];
+        }
+    }
+    if(is_array($country_stats))
+    {
+        $country_stats["Worldwide"] = ["zce-count" => $total_zce];
     }
     return $total_zce;
 }
@@ -49,21 +59,22 @@ function get_zce_by_country($cid)
         if($arr_response["status"]==="OK")
         {
             return $arr_response["result"];
-        }else
+        }
+        else
         {
-            echo 'Error #02: Valid Response, Status not OK - check Response'.PHP_EOL;
+            echo 'Error #02: Valid Response, Status Not OK - check Response'.PHP_EOL;
             echo 'Country ID: '.$cid.PHP_EOL;
             var_dump($arr_response);
             return -2;
         }
     }else
     {
-        echo 'Error #01: Invalid Response - check URI'.PHP_EOL;
+        echo 'Error #01: JSON Cannot be Decoded - check URL'.PHP_EOL;
         return -1;
     }
 }
 
-/*
+/**
  * Converts the Zend Country Id and associated Name from XML to a Serialized object
  * @return int|bool the number of bytes that were written to the file, or FALSE on failure.
  */
